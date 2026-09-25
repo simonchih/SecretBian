@@ -49,7 +49,30 @@ python main.py
 - `tutorial.py`：雙語互動教學狀態及畫面。
 - `main.py`：四選項入口與子程序管理。遊戲離開後重新建立主選單畫面。
 
-舊版資料夾、未使用的舊圖片、舊 py2exe 設定及一次性遷移工具已移除。本專案提供 Python 啟動方式，未製作 exe。
+舊版資料夾、未使用的舊圖片、舊 py2exe 設定及一次性遷移工具已移除。
+
+## 打包 Windows EXE
+
+在專案目錄執行 `build.bat`，會使用 `.venv` 的 Python 安裝打包依賴，再使用 `main.spec` 產生單檔 `dist/SecretCouncil.exe`。圖片、字型與兩版遊戲都已內含，使用者不需安裝 Python。請先關閉正在使用的同名 EXE 再重新打包。
+
+也可以手動執行：
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-build.txt
+.\.venv\Scripts\python.exe -m PyInstaller --noconfirm --clean main.spec
+```
+
+請使用 `python -m PyInstaller` 並明確指定 `.venv`，避免 PATH 中的 Python 3.9 舊版 `pyinstaller.exe` 被誤用。舊版的 `.notanexecutable` 標頭寫入錯誤已不適用目前採用的 PyInstaller 6.x 打包流程。若仍有寫入失敗，檢查錯誤紀錄與安全軟體隔離紀錄，確認檔案是否正被其他程序占用。
+
+EXE 使用 `--edition Trump` 或 `--edition Bian` 啟動內含遊戲模組；不會把 EXE 當成 Python 直譯器去執行外部 `.py`。`main.spec` 關閉 UPX，並使用專案內的資源相對位置，支援單檔解壓路徑。
+
+打包後可執行診斷（會短暫開啟視窗，自動操作兩版各一局與四個入口，並輸出 JSON 報告）：
+
+```powershell
+$check = Start-Process -FilePath .\dist\SecretCouncil.exe -ArgumentList '--self-test', 'artifacts\exe-check.json' -WindowStyle Hidden -PassThru -Wait
+$check.ExitCode
+Get-Content artifacts\exe-check.json
+```
 
 ## 驗證
 

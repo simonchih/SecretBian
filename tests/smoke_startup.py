@@ -50,6 +50,7 @@ pygame.event.get = events
 
 if child:
     script = Path(sys.argv[sys.argv.index('--child') + 1])
+    sys.argv=[str(script)]
     runpy.run_path(str(script), run_name='__main__')
     assert frames == 12
     print(f'{script.name}: started, rendered, ESC exited')
@@ -72,6 +73,7 @@ else:
     subprocess.run = child_run
     # Start the launcher from another directory to catch relative-path mistakes.
     os.chdir(ROOT / 'tests')
+    sys.argv=[str(ROOT / 'main.py')]
     runpy.run_path(str(ROOT / 'main.py'), run_name='__main__')
     assert launched == ['game_trump.py', 'game_bian.py']
     assert frames == 84

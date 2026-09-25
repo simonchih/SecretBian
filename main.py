@@ -9,13 +9,32 @@ from tutorial import Tutorial
 
 MENU_LABELS = ['Secret Trump Version','Tutorial for Trump','阿扁版','阿扁版遊戲教學']
 MENU_RECTS = [pygame.Rect(450,385+i*83,500,67) for i in range(4)]
+SELF_TEST_REPORT = None
+
+def game_module(edition):
+    # Explicit imports allow PyInstaller to discover both game modules.
+    if edition == 'Trump':
+        import game_trump
+        return game_trump
+    if edition == 'Bian':
+        import game_bian
+        return game_bian
+    raise ValueError(edition)
 
 def launch_game(edition):
     """Run each edition in its own process to isolate game state."""
     script={'Trump':'game_trump.py','Bian':'game_bian.py'}[edition]
+    if getattr(sys,'frozen',False):
+        command=[sys.executable,'--edition',edition]
+    else:
+        command=[sys.executable,str(ROOT/script)]
+    if SELF_TEST_REPORT is not None:
+        if not getattr(sys,'frozen',False):
+            command=[sys.executable,str(ROOT/'main.py'),'--edition',edition]
+        command+=['--self-test',str(SELF_TEST_REPORT.with_name(edition+'-self-test.json'))]
     pygame.display.quit()
     try:
-        result=subprocess.run([sys.executable,str(ROOT/script)],cwd=str(ROOT),check=False)
+        result=subprocess.run(command,cwd=str(ROOT),check=False)
     finally:
         pygame.display.init()
     return result.returncode
@@ -92,5 +111,21 @@ def main():
         clock.tick(60)
     pygame.quit()
 
+def entrypoint():
+    import argparse
+    global SELF_TEST_REPORT
+    parser=argparse.ArgumentParser(description='Secret Council')
+    parser.add_argument('--edition',choices=('Trump','Bian'))
+    parser.add_argument('--self-test',type=Path,metavar='REPORT.json',help='Run automated native-window checks and save a report')
+    args=parser.parse_args()
+    if args.self_test:
+        SELF_TEST_REPORT=args.self_test.resolve()
+        from packaging_check import run_check
+        run_check(sys.modules[__name__],args.edition,SELF_TEST_REPORT)
+    elif args.edition:
+        game_module(args.edition).main()
+    else:
+        main()
+
 if __name__=='__main__':
-    main()
+    entrypoint()
